@@ -9,6 +9,8 @@
 *.dylib
 *.pem
 token.json
+*.json
+markmap.md
 
 # Test binary, built with `go test -c`
 *.test

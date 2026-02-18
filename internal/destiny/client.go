@@ -11,9 +11,10 @@ import (
 )
 
 type Client struct {
-	httpClient *http.Client
-	cfg        *config.Config
-	token      *models.Token
+	httpClient   *http.Client
+	cfg          *config.Config
+	token        *models.Token
+	memberShipId string
 }
 
 func NewClient(cfg *config.Config, token *models.Token) *Client {
@@ -24,8 +25,11 @@ func NewClient(cfg *config.Config, token *models.Token) *Client {
 	}
 }
 
+func (c *Client) SetMembershipId(mId string) {
+	c.memberShipId = mId
+}
+
 func (c *Client) DoRequest(method, url string) (*http.Response, error) {
-	// Usamos una función interna para no repetir la lógica de creación de headers
 	makeReq := func() (*http.Request, error) {
 		req, err := http.NewRequest(method, url, nil)
 		if err != nil {
@@ -48,7 +52,6 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 
 	// Si el token expiró (401)
 	if resp.StatusCode == http.StatusUnauthorized {
-		// ¡Importante! Cerrar el cuerpo de la respuesta fallida antes de reintentar
 		resp.Body.Close()
 
 		log.Println("🔄 Token expirado, intentando refresh...")
@@ -60,7 +63,6 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 
 		c.token = newToken
 
-		// Crear nueva petición con el nuevo token
 		req, err = makeReq()
 		if err != nil {
 			return nil, err
