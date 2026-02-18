@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	db "github.com/nicoki2004/g2-drc/db/sqlc"
 	"github.com/nicoki2004/g2-drc/internal/auth"
 	"github.com/nicoki2004/g2-drc/internal/config"
 	"github.com/nicoki2004/g2-drc/internal/models"
@@ -15,6 +16,7 @@ type Client struct {
 	cfg          *config.Config
 	token        *models.Token
 	memberShipId string
+	DbQuery      *db.Queries
 }
 
 func NewClient(cfg *config.Config, token *models.Token) *Client {
@@ -23,6 +25,10 @@ func NewClient(cfg *config.Config, token *models.Token) *Client {
 		cfg:        cfg,
 		token:      token,
 	}
+}
+
+func (c *Client) SetDbQuery(query *db.Queries) {
+	c.DbQuery = query
 }
 
 func (c *Client) SetMembershipId(mId string) {

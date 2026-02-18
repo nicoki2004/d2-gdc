@@ -25,15 +25,28 @@ const (
 
 type ProfileResponse struct {
 	Response struct {
+		// 100 - INFORMACION DEL PERFIL
 		Characters struct {
 			Data map[string]CharacterData `json:"data"`
 		} `json:"characters"`
 
+		// 102 - EL VAULT (DEPÓSITO)
+		ProfileInventory struct {
+			Data struct {
+				Items []Item `json:"items"`
+			} `json:"data"`
+		} `json:"profileInventory"`
+
+		// 201 - LAS MOCHILAS (INVENTARIOS)
+		CharacterInventories struct {
+			Data map[string]CharacterEquipmentData `json:"data"`
+		} `json:"characterInventories"`
+		// 205 - LO EQUIPADO
 		CharacterEquipment struct {
 			Data map[string]CharacterEquipmentData `json:"data"`
 		} `json:"characterEquipment"`
 
-		// Aquí es donde Go suele fallar si no respetas la jerarquía exacta
+		// 300-309 - DETALLES TÉCNICOS
 		ItemComponents struct {
 			Instances struct {
 				Data map[string]ItemInstanceData `json:"data"`
@@ -140,22 +153,6 @@ type ObjectiveData struct {
 	Visible         bool   `json:"visible"`
 }
 
-// type ItemComponents struct {
-// 	Instances struct {
-// 		Data map[string]ItemInstanceData `json:"data"`
-// 	} `json:"instances"`
-// 	Stats struct {
-// 		Data map[string]ItemStatsComponent `json:"data"`
-// 	} `json:"stats"`
-// 	Objectives struct {
-// 		Data map[string]ItemObjectivesComponent `json:"data"`
-// 	} `json:"objectives"`
-// 	ItemPlugObjectives struct { // <--- COMPONENTE 309
-// 		Data map[string]ItemPlugObjectivesComponent `json:"data"`
-// 	} `json:"itemPlugObjectives"`
-// }
-//
-
 const (
 	// Profile (100-199)
 	ProfilesComponent           = "100"
@@ -208,6 +205,8 @@ const (
 // personajes, sus armas equipadas, perks y stats.
 func GetCoreComponents() []string {
 	return []string{
+		ProfilesComponent,                 // 100
+		ProfileInventoriesComponent,       // 102
 		CharactersComponent,               // 200
 		CharacterInventoriesComponent,     // 201
 		CharacterEquipmentComponent,       // 205
@@ -226,6 +225,16 @@ const (
 	WarlockClassType = 2
 	UnknownClassType = 3
 )
+
+var classNames = map[uint32]string{
+	0: "Titan",
+	1: "Hunter",
+	2: "Warlock",
+}
+
+func getClassName(classType int) string {
+	return classNames[uint32(classType)]
+}
 
 // ITEMTYPE from Manifest
 const (

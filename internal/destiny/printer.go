@@ -23,6 +23,49 @@ func PrintCharacters(profile *ProfileResponse) {
 	}
 }
 
+func PrintAllWeapons(profile *ProfileResponse, manifest map[string]ManifestItem) {
+	fmt.Println("\n=== RASTREO COMPLETO DE ARMAMENTO ===")
+	// Every Character
+	for charId, char := range profile.Response.Characters.Data {
+		className := getClassName(char.ClassType)
+		fmt.Printf("\n--- %s (%s) ---\n", className, charId)
+		// A. Lo equipado (205)
+		if equip, ok := profile.Response.CharacterEquipment.Data[charId]; ok {
+			for _, item := range equip.Items {
+				renderItem(item, profile, manifest, "EQUIPADO")
+			}
+		}
+
+		// B. Lo que lleva en la mochila (201)
+		if inv, ok := profile.Response.CharacterInventories.Data[charId]; ok {
+			for _, item := range inv.Items {
+				renderItem(item, profile, manifest, "MOCHILA")
+			}
+		}
+	}
+	// 2. EL VAULT (102)
+	fmt.Println("\n--- EL DEPÓSITO (VAULT) ---")
+	for _, item := range profile.Response.ProfileInventory.Data.Items {
+		renderItem(item, profile, manifest, "VAULT")
+	}
+}
+
+func renderItem(item Item, profile *ProfileResponse, manifest map[string]ManifestItem, location string) {
+	val, ok := manifest[fmt.Sprintf("%d", item.ItemHash)]
+	if !ok || val.ItemType != Weapon {
+		return
+	}
+
+	level, kills, progress := GetWeaponMetadata(item.ItemInstanceId, profile)
+	power := 0
+	if inst, ok := profile.Response.ItemComponents.Instances.Data[item.ItemInstanceId]; ok {
+		power = inst.PrimaryStat.Value
+	}
+	// Si es del Vault, el InstanceId puede ser clave para buscar stats
+	fmt.Printf("%s --> 🔫 %s [%s] @%d --> [Nivel %d - %.1f%%] [%d Bajas]\n", location,
+		val.DisplayProperties.Name, val.ItemTypeDisplayName, power, level, progress, kills)
+}
+
 func PrintCharactersItems(profile *ProfileResponse, manifest map[string]ManifestItem) {
 	fmt.Println("Cargando base de datos de items...")
 
