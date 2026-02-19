@@ -2,7 +2,6 @@ package destiny
 
 import (
 	"fmt"
-	"strings"
 )
 
 func PrintCharacters(profile *ProfileResponse) {
@@ -19,7 +18,7 @@ func PrintCharacters(profile *ProfileResponse) {
 		}
 
 		fmt.Printf("[%s] ID: %s | Luz: %d | Tiempo: %s min\n",
-			className, id, char.Light, char.MinutesTotal)
+			className, id, char.Light, char.DateLastPlayed)
 	}
 }
 
@@ -27,7 +26,7 @@ func PrintAllWeapons(profile *ProfileResponse, manifest map[string]ManifestItem)
 	fmt.Println("\n=== RASTREO COMPLETO DE ARMAMENTO ===")
 	// Every Character
 	for charId, char := range profile.Response.Characters.Data {
-		className := getClassName(char.ClassType)
+		className := GetClassName(char.ClassType)
 		fmt.Printf("\n--- %s (%s) ---\n", className, charId)
 		// A. Lo equipado (205)
 		if equip, ok := profile.Response.CharacterEquipment.Data[charId]; ok {
@@ -107,14 +106,8 @@ func PrintCharactersItems(profile *ProfileResponse, manifest map[string]Manifest
 					}
 
 					// 2. Caso: Perks de combate (Traits)
-					if typeName == "Intrinsic" ||
-						strings.Contains(typeName, "Trait") ||
-						strings.Contains(typeName, "Barrel") ||
-						strings.Contains(typeName, "Magazine") ||
-						strings.Contains(typeName, "Blade") ||
-						strings.Contains(typeName, "Guard") ||
-						strings.Contains(typeName, "Arrow") || // Para Arcos
-						strings.Contains(typeName, "String") { // Para Arcos/ Para Espadas
+					validator := NewPerkValidator()
+					if validator.IsActualPerk(typeName) {
 						fmt.Printf("   └─ Socket %d (%s):\n", i, typeName)
 
 						socketIndexStr := fmt.Sprintf("%d", i)

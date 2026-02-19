@@ -2,12 +2,11 @@ package destiny
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	db "github.com/nicoki2004/g2-drc/db/sqlc"
 	"github.com/nicoki2004/g2-drc/internal/auth"
 	"github.com/nicoki2004/g2-drc/internal/config"
+	"github.com/nicoki2004/g2-drc/internal/logger"
 	"github.com/nicoki2004/g2-drc/internal/models"
 )
 
@@ -16,7 +15,6 @@ type Client struct {
 	cfg          *config.Config
 	token        *models.Token
 	memberShipId string
-	DbQuery      *db.Queries
 }
 
 func NewClient(cfg *config.Config, token *models.Token) *Client {
@@ -27,15 +25,17 @@ func NewClient(cfg *config.Config, token *models.Token) *Client {
 	}
 }
 
-func (c *Client) SetDbQuery(query *db.Queries) {
-	c.DbQuery = query
-}
-
 func (c *Client) SetMembershipId(mId string) {
 	c.memberShipId = mId
 }
 
 func (c *Client) DoRequest(method, url string) (*http.Response, error) {
+	if method == "" {
+		return nil, fmt.Errorf("HTTP method cannot be empty")
+	}
+	if url == "" {
+		return nil, fmt.Errorf("URL cannot be empty")
+	}
 	makeReq := func() (*http.Request, error) {
 		req, err := http.NewRequest(method, url, nil)
 		if err != nil {
@@ -60,7 +60,7 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 	if resp.StatusCode == http.StatusUnauthorized {
 		resp.Body.Close()
 
-		log.Println("🔄 Token expirado, intentando refresh...")
+		logger.GetLogger().Warn("Token expirado, intentando refresh")
 
 		newToken, err := auth.RefreshToken(c.cfg, c.token)
 		if err != nil {
@@ -74,7 +74,7 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 			return nil, err
 		}
 
-		log.Println("✅ Token refrescado, reintentando petición original...")
+		logger.GetLogger().Info("Token refrescado, reintentando petición original")
 		return c.httpClient.Do(req)
 	}
 

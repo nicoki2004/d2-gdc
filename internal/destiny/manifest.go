@@ -10,9 +10,18 @@ import (
 type ManifestItem struct {
 	DisplayProperties struct {
 		Name string `json:"name"`
+		Icon string `json:"icon"`
 	} `json:"displayProperties"`
 	ItemTypeDisplayName string `json:"itemTypeDisplayName"`
 	ItemType            int    `json:"itemType"`
+	Inventory           struct {
+		TierTypeName   string `json:"tierTypeName"`   // "Exotic"
+		BucketTypeHash uint32 `json:"bucketTypeHash"` // Para el Slot
+	} `json:"inventory"`
+	EquippingBlock struct {
+		AmmoType int32 `json:"ammoType"` // 1: Primary, 2: Special, 3: Heavy
+	} `json:"equippingBlock"`
+	DefaultDamageTypeHash uint32 `json:"defaultDamageTypeHash"`
 }
 
 func LoadManifestMap(filePath string) (map[string]ManifestItem, error) {

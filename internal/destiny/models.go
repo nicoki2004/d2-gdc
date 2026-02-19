@@ -1,5 +1,9 @@
 package destiny
 
+import "time"
+
+// MembershipResponse contiene información de suscripción del usuario en Bungie
+// Devuelve todas las cuentas de Destiny conectadas a la cuenta de Bungie
 type MembershipResponse struct {
 	Response struct {
 		DestinyMemberships  []DestinyMembership `json:"destinyMemberships"`
@@ -9,6 +13,7 @@ type MembershipResponse struct {
 	Message   string `json:"Message"`
 }
 
+// DestinyMembership representa una plataforma de juego individual (PS5, Xbox, Steam, etc)
 type DestinyMembership struct {
 	MembershipType          int    `json:"membershipType"`
 	MembershipId            string `json:"membershipId"`
@@ -23,6 +28,8 @@ const (
 	Steam       = 3
 )
 
+// ProfileResponse es la respuesta completa del endpoint de Perfil de Bungie
+// Contiene personajes, inventario, equipamiento, stats y todos los detalles técnicos
 type ProfileResponse struct {
 	Response struct {
 		// 100 - INFORMACION DEL PERFIL
@@ -105,21 +112,23 @@ type SocketEntry struct {
 	IsVisible bool   `json:"isVisible"`
 }
 
+// CharacterData representa un personaje del usuario (Componente 200)
 type CharacterData struct {
-	CharacterId  string `json:"characterId"`
-	ClassType    int    `json:"classType"`
-	Light        int    `json:"light"`
-	MinutesTotal string `json:"minutesPlayedTotal"`
-	EmblemPath   string `json:"emblemBackgroundPath"`
+	CharacterId    string    `json:"characterId"`
+	ClassType      int       `json:"classType"`
+	Light          int       `json:"light"`
+	DateLastPlayed time.Time `json:"dateLastPlayed"`
+	EmblemPath     string    `json:"emblemBackgroundPath"`
 }
 
 type CharacterEquipmentData struct {
 	Items []Item `json:"items"`
 }
 
+// Item representa un elemento en el inventario (arma, armadura, consumible, etc)
 type Item struct {
-	ItemHash       uint32 `json:"itemHash"`       // ¡El famoso Hash!
-	ItemInstanceId string `json:"itemInstanceId"` // ID único de tu arma específica
+	ItemHash       uint32 `json:"itemHash"`       // Hash de definición del item (referencia al manifest)
+	ItemInstanceId string `json:"itemInstanceId"` // ID único de esta instancia específica
 }
 
 // ItemStatsComponent representa los stats de una instancia (Componente 304)
@@ -232,7 +241,8 @@ var classNames = map[uint32]string{
 	2: "Warlock",
 }
 
-func getClassName(classType int) string {
+// GetClassName devuelve el nombre del guardián a partir de su tipo (Titan, Hunter, Warlock)
+func GetClassName(classType int) string {
 	return classNames[uint32(classType)]
 }
 
@@ -257,33 +267,108 @@ const (
 	Mod               = 19
 )
 
-var StatsDictionary = map[uint32]string{
-	// --- Armas de Fuego (Basado en tus capturas de Commemoration y Drang) ---
+// Hash constants para tipos de stats comunes en armas
+const (
+	// Estadísticas principales de armas de fuego
+	StatHashRPM         = uint32(4232813984) // Velocidad de fuego
+	StatHashImpact      = uint32(4043523819) // Impacto
+	StatHashRange       = uint32(1240592695) // Alcance
+	StatHashStability   = uint32(155624089)  // Estabilidad
+	StatHashHandling    = uint32(943549884)  // Manejo
+	StatHashReloadSpeed = uint32(4284893193) // Velocidad de recarga
+	StatHashMagazine    = uint32(3871231066) // Capacidad de cargador
 
-	4232813984: "RPM",          // Valor 450 en Commemoration
-	4043523819: "Impact",       // Valor 41 en Commemoration
-	1240592695: "Range",        // Valor 70 en Commemoration
-	155624089:  "Stability",    // Valor 57 en Commemoration
-	943549884:  "Handling",     // Valor 77 en Commemoration
-	4284893193: "Reload Speed", // Hash estándar de recarga
-	3871231066: "Magazine",     // Valor 75 en Commemoration
+	// Estadísticas técnicas
+	StatHashAimAssistance   = uint32(1345609583) // Asistencia de puntería
+	StatHashAirborne        = uint32(2714457168) // Precisión en aire
+	StatHashZoom            = uint32(3555269338) // Zoom
+	StatHashRecoilDirection = uint32(2715839340) // Dirección del retroceso
+
+	// Estadísticas de espadas
+	StatHashSwingSpeed      = uint32(2837207746) // Velocidad de oscilación
+	StatHashAmmoCapacity    = uint32(925767036)  // Capacidad de munición
+	StatHashGuardResistance = uint32(419712076)  // Resistencia de guardia
+	StatHashChargeRate      = uint32(3022301683) // Velocidad de carga
+	StatHashGuardEndurance  = uint32(3736848092) // Resistencia de guardia
+)
+
+var StatsDictionary = map[uint32]string{
+	// --- Armas de Fuego ---
+	4232813984: "RPM",          // Velocidad de fuego
+	4043523819: "Impact",       // Impacto
+	1240592695: "Range",        // Alcance
+	155624089:  "Stability",    // Estabilidad
+	943549884:  "Handling",     // Manejo
+	4284893193: "Reload Speed", // Velocidad de recarga
+	3871231066: "Magazine",     // Capacidad de cargador
 
 	// --- Stats Técnicos / Extra ---
-	1345609583: "Aim Assistance",   // Valor 64 en Commemoration
-	2714457168: "Airborne",         // Valor 18 en Commemoration
-	3555269338: "Zoom",             // Valor 16 en Commemoration
-	2715839340: "Recoil Direction", // Valor 100 en Commemoration
+	1345609583: "Aim Assistance",   // Asistencia de puntería
+	2714457168: "Airborne",         // Precisión en aire
+	3555269338: "Zoom",             // Zoom
+	2715839340: "Recoil Direction", // Dirección del retroceso
 
-	// --- Espadas (Tu Synanceia) ---
-	2837207746: "Swing Speed",      // Valor 40 en Synanceia
-	925767036:  "Ammo Capacity",    // Valor 71 en Synanceia
-	419712076:  "Guard Resistance", // Valor 41 en Synanceia
-	3022301683: "Charge Rate",      // Valor 50 en Synanceia
-	3736848092: "Guard Endurance",  // Valor 43 en Synanceia
+	// --- Espadas ---
+	2837207746: "Swing Speed",      // Velocidad de oscilación
+	925767036:  "Ammo Capacity",    // Capacidad de munición
+	419712076:  "Guard Resistance", // Resistencia de guardia
+	3022301683: "Charge Rate",      // Velocidad de carga
+	3736848092: "Guard Endurance",  // Resistencia de guardia
 }
 
+// Hashes de objetivos especiales para rastreo de progreso
 const (
-	StatWeaponLevel     = 2021564063 // Nivel de arma (598)
-	StatEnemiesDefeated = 38912240   // Bajas (23,186)
-	StatLevelProgress   = 2146410756 // Progreso del nivel (24%)
+	ObjectiveHashWeaponLevel     = uint32(2021564063) // Nivel del arma (ej: 598)
+	ObjectiveHashEnemiesDefeated = uint32(38912240)   // Total de bajas/enemigos derrotados
+	ObjectiveHashLevelProgress   = uint32(2146410756) // Progreso del nivel actual (%)
 )
+
+const BungieCDN = "https://www.bungie.net"
+
+// Traduce el DamageTypeHash a texto legible
+func GetDamageName(hash uint32) string {
+	switch hash {
+	case 1847026933, 3:
+		return "Solar"
+	case 2301139358, 2303181850, 2:
+		return "Arc"
+	case 3454344763, 3454344768, 4:
+		return "Void"
+	case 1513472331, 151347233, 6:
+		return "Stasis"
+	case 3946443463, 3949783978, 7:
+		return "Strand"
+	case 3373582059, 1, 0:
+		return "Kinetic"
+	default:
+		return "Kinetic" // Si es 0 o desconocido, la gran mayoría son cinéticas
+	}
+}
+
+// Traduce el BucketHash (Slot) a texto legible
+func GetSlotName(hash uint32) string {
+	switch hash {
+	case 1498876634:
+		return "Kinetic" // Slot superior
+	case 2465295065:
+		return "Energy" // Slot medio
+	case 95395402:
+		return "Power" // Slot inferior
+	default:
+		return "Other" // Para el caso del segundo objeto que vimos con slot 24222...
+	}
+}
+
+// Determina el tipo de munición (para iconos o filtros)
+func GetAmmoTypeName(ammoType int32) string {
+	switch ammoType {
+	case 1:
+		return "Primary"
+	case 2:
+		return "Special"
+	case 3:
+		return "Heavy"
+	default:
+		return "None"
+	}
+}

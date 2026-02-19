@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/nicoki2004/g2-drc/internal/auth"
 	"github.com/nicoki2004/g2-drc/internal/config"
+	"github.com/nicoki2004/g2-drc/internal/logger"
 )
 
 func main() {
+	log := logger.GetLogger()
 	done := make(chan bool)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -19,28 +20,28 @@ func main() {
 			return
 		}
 
-		fmt.Printf("¡Código recibido!: %s\n", code)
+		log.Info("¡Código recibido!: %s", code)
 		fmt.Fprintf(w, "¡Autorización exitosa! Puedes cerrar esta pestaña y volver a la terminal.")
 
 		cfg := config.Get()
 		token, err := auth.ExchangeCode(cfg, code)
 		if err != nil {
-			log.Printf("exchange error: %v", err)
+			log.Error("exchange error: %v", err)
 			return
 		}
 		if err := auth.SaveTokenJSON(token); err != nil {
-			log.Printf("save keychain error: %v", err)
+			log.Error("save keychain error: %v", err)
 			return
 		}
-		fmt.Println("✅ Token guardado de forma segura.")
+		log.Info("✅ Token guardado de forma segura.")
 
 		done <- true
 	})
 
 	go func() {
-		log.Println("Servidor escuchando en https://localhost:4200...")
+		log.Info("Servidor escuchando en https://localhost:4200...")
 		if err := http.ListenAndServeTLS(":4200", "localhost.pem", "localhost-key.pem", nil); err != nil {
-			log.Fatalf("No se pudo iniciar el servidor: %v", err)
+			log.Fatal("No se pudo iniciar el servidor: %v", err)
 		}
 	}()
 

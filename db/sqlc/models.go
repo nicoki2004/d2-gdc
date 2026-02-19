@@ -8,16 +8,30 @@ import (
 	"database/sql"
 )
 
+type Character struct {
+	CharacterID string
+	ClassType   int64
+	LightLevel  int64
+	EmblemUrl   sql.NullString
+	LastPlayed  sql.NullTime
+}
+
 type Weapon struct {
-	InstanceID string
-	Hash       int64
-	Name       string
-	Type       string
-	Power      int64
-	Kills      int64
-	Level      int64
-	Location   string
-	UpdatedAt  sql.NullTime
+	InstanceID  string
+	Hash        int64
+	Name        string
+	Type        string
+	Power       int64
+	Kills       int64
+	Level       int64
+	Location    string
+	UpdatedAt   sql.NullTime
+	Tier        sql.NullString
+	IconUrl     sql.NullString
+	Slot        sql.NullString
+	DamageType  sql.NullString
+	AmmoType    sql.NullInt64
+	CharacterID sql.NullString
 }
 
 type WeaponPerk struct {

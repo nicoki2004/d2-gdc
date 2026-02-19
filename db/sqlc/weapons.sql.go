@@ -7,7 +7,35 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
+
+const clearAllWeaponStats = `-- name: ClearAllWeaponStats :exec
+DELETE FROM weapon_stats
+`
+
+func (q *Queries) ClearAllWeaponStats(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearAllWeaponStats)
+	return err
+}
+
+const clearAllWeaponsData = `-- name: ClearAllWeaponsData :exec
+DELETE FROM weapons
+`
+
+func (q *Queries) ClearAllWeaponsData(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearAllWeaponsData)
+	return err
+}
+
+const clearAllWeaponsPerks = `-- name: ClearAllWeaponsPerks :exec
+DELETE FROM weapon_perks
+`
+
+func (q *Queries) ClearAllWeaponsPerks(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearAllWeaponsPerks)
+	return err
+}
 
 const clearWeaponPerks = `-- name: ClearWeaponPerks :exec
 DELETE FROM weapon_perks WHERE instance_id = ?
@@ -29,7 +57,7 @@ func (q *Queries) ClearWeaponStats(ctx context.Context, instanceID string) error
 
 const getGodRollCandidates = `-- name: GetGodRollCandidates :many
 SELECT 
-  w.instance_id, w.hash, w.name, w.type, w.power, w.kills, w.level, w.location, w.updated_at FROM weapons w
+  w.instance_id, w.hash, w.name, w.type, w.power, w.kills, w.level, w.location, w.updated_at, w.tier, w.icon_url, w.slot, w.damage_type, w.ammo_type, w.character_id FROM weapons w
 JOIN weapon_perks p ON w.instance_id = p.instance_id
 JOIN weapon_stats s ON w.instance_id = s.instance_id
 WHERE p.perk_name = ? AND s.stat_name = 'Range' AND s.value > ?
@@ -59,6 +87,12 @@ func (q *Queries) GetGodRollCandidates(ctx context.Context, arg GetGodRollCandid
 			&i.Level,
 			&i.Location,
 			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
 		); err != nil {
 			return nil, err
 		}
@@ -113,27 +147,61 @@ func (q *Queries) InsertWeaponStat(ctx context.Context, arg InsertWeaponStatPara
 	return err
 }
 
+const upsertCharacter = `-- name: UpsertCharacter :exec
+INSERT INTO characters (character_id, class_type, light_level, emblem_url, last_played)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(character_id) DO UPDATE SET
+    light_level = excluded.light_level,
+    last_played = excluded.last_played
+`
+
+type UpsertCharacterParams struct {
+	CharacterID string
+	ClassType   int64
+	LightLevel  int64
+	EmblemUrl   sql.NullString
+	LastPlayed  sql.NullTime
+}
+
+func (q *Queries) UpsertCharacter(ctx context.Context, arg UpsertCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, upsertCharacter,
+		arg.CharacterID,
+		arg.ClassType,
+		arg.LightLevel,
+		arg.EmblemUrl,
+		arg.LastPlayed,
+	)
+	return err
+}
+
 const upsertWeapon = `-- name: UpsertWeapon :exec
-INSERT INTO 
-  weapons (instance_id, hash, name, type, power, kills, level, location, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+INSERT INTO weapons (
+    instance_id, hash, name, type, power, kills, level, location, 
+    tier, icon_url, slot, damage_type, ammo_type, character_id
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(instance_id) DO UPDATE SET
     power = excluded.power,
     kills = excluded.kills,
     level = excluded.level,
     location = excluded.location,
-    updated_at = CURRENT_TIMESTAMP
+    character_id = excluded.character_id
 `
 
 type UpsertWeaponParams struct {
-	InstanceID string
-	Hash       int64
-	Name       string
-	Type       string
-	Power      int64
-	Kills      int64
-	Level      int64
-	Location   string
+	InstanceID  string
+	Hash        int64
+	Name        string
+	Type        string
+	Power       int64
+	Kills       int64
+	Level       int64
+	Location    string
+	Tier        sql.NullString
+	IconUrl     sql.NullString
+	Slot        sql.NullString
+	DamageType  sql.NullString
+	AmmoType    sql.NullInt64
+	CharacterID sql.NullString
 }
 
 func (q *Queries) UpsertWeapon(ctx context.Context, arg UpsertWeaponParams) error {
@@ -146,6 +214,12 @@ func (q *Queries) UpsertWeapon(ctx context.Context, arg UpsertWeaponParams) erro
 		arg.Kills,
 		arg.Level,
 		arg.Location,
+		arg.Tier,
+		arg.IconUrl,
+		arg.Slot,
+		arg.DamageType,
+		arg.AmmoType,
+		arg.CharacterID,
 	)
 	return err
 }

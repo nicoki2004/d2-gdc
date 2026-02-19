@@ -28,6 +28,12 @@ func AuthURL(cfg config.Config) (string, error) {
 
 // Change a code for a Token
 func ExchangeCode(cfg *config.Config, code string) (*models.Token, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+	if code == "" {
+		return nil, fmt.Errorf("authorization code cannot be empty")
+	}
 	form := url.Values{}
 	form.Set("grant_type", "authorization_code")
 	form.Set("code", code)
@@ -37,7 +43,10 @@ func ExchangeCode(cfg *config.Config, code string) (*models.Token, error) {
 		form.Set("redirect_uri", cfg.RedirectURL)
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", models.AUTH_TOKEN_URL_PREFIX, strings.NewReader(form.Encode()))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", models.AUTH_TOKEN_URL_PREFIX, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +63,9 @@ func ExchangeCode(cfg *config.Config, code string) (*models.Token, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		var errorDetail any
-		json.NewDecoder(resp.Body).Decode(&errorDetail)
+		if err := json.NewDecoder(resp.Body).Decode(&errorDetail); err != nil {
+			errorDetail = "unable to parse error details"
+		}
 		return nil, fmt.Errorf("token exchange failed: %s - Detail: %v", resp.Status, errorDetail)
 	}
 
@@ -66,7 +77,14 @@ func ExchangeCode(cfg *config.Config, code string) (*models.Token, error) {
 	return t, nil
 }
 
-const tokenFile = "token.json"
+// getTokenFile returns the path to the token file from environment variable TOKEN_FILE,
+// with a default of "token.json" if not set.
+func getTokenFile() string {
+	if path := os.Getenv("TOKEN_FILE"); path != "" {
+		return path
+	}
+	return "token.json"
+}
 
 // Save Token to a JSON File
 func SaveTokenJSON(token *models.Token) error {
@@ -74,12 +92,12 @@ func SaveTokenJSON(token *models.Token) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(tokenFile, data, 0o644)
+	return os.WriteFile(getTokenFile(), data, 0o644)
 }
 
 // Reload a Token from a JSON file
 func ReadTokenJSON() (*models.Token, error) {
-	data, err := os.ReadFile(tokenFile)
+	data, err := os.ReadFile(getTokenFile())
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +108,12 @@ func ReadTokenJSON() (*models.Token, error) {
 
 // Refres token and return a new token
 func RefreshToken(cfg *config.Config, oldToken *models.Token) (*models.Token, error) {
+	if cfg == nil {
+		return &models.Token{}, fmt.Errorf("config cannot be nil")
+	}
+	if oldToken == nil {
+		return &models.Token{}, fmt.Errorf("oldToken cannot be nil")
+	}
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
 	data.Set("refresh_token", oldToken.RefreshToken)
