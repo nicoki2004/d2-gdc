@@ -1,9 +1,11 @@
 package destiny
 
-import "time"
+import (
+	"time"
+)
 
-// MembershipResponse contiene información de suscripción del usuario en Bungie
-// Devuelve todas las cuentas de Destiny conectadas a la cuenta de Bungie
+// MembershipResponse contains Bungie subscription information for the user
+// Returns all Destiny accounts connected to the Bungie account
 type MembershipResponse struct {
 	Response struct {
 		DestinyMemberships  []DestinyMembership `json:"destinyMemberships"`
@@ -13,7 +15,7 @@ type MembershipResponse struct {
 	Message   string `json:"Message"`
 }
 
-// DestinyMembership representa una plataforma de juego individual (PS5, Xbox, Steam, etc)
+// DestinyMembership represents an individual gaming platform (PS5, Xbox, Steam, etc)
 type DestinyMembership struct {
 	MembershipType          int    `json:"membershipType"`
 	MembershipId            string `json:"membershipId"`
@@ -28,32 +30,32 @@ const (
 	Steam       = 3
 )
 
-// ProfileResponse es la respuesta completa del endpoint de Perfil de Bungie
-// Contiene personajes, inventario, equipamiento, stats y todos los detalles técnicos
+// ProfileResponse is the complete response from Bungie's Profile endpoint
+// Contains characters, inventory, equipment, stats and all technical details
 type ProfileResponse struct {
 	Response struct {
-		// 100 - INFORMACION DEL PERFIL
+		// 100 - PROFILE INFORMATION
 		Characters struct {
 			Data map[string]CharacterData `json:"data"`
 		} `json:"characters"`
 
-		// 102 - EL VAULT (DEPÓSITO)
+		// 102 - THE VAULT (STORAGE)
 		ProfileInventory struct {
 			Data struct {
 				Items []Item `json:"items"`
 			} `json:"data"`
 		} `json:"profileInventory"`
 
-		// 201 - LAS MOCHILAS (INVENTARIOS)
+		// 201 - THE BACKPACKS (INVENTORIES)
 		CharacterInventories struct {
 			Data map[string]CharacterEquipmentData `json:"data"`
 		} `json:"characterInventories"`
-		// 205 - LO EQUIPADO
+		// 205 - EQUIPPED ITEMS
 		CharacterEquipment struct {
 			Data map[string]CharacterEquipmentData `json:"data"`
 		} `json:"characterEquipment"`
 
-		// 300-309 - DETALLES TÉCNICOS
+		// 300-309 - TECHNICAL DETAILS
 		ItemComponents struct {
 			Instances struct {
 				Data map[string]ItemInstanceData `json:"data"`
@@ -67,11 +69,11 @@ type ProfileResponse struct {
 				Data map[string]ItemStatsComponent `json:"data"`
 			} `json:"stats"`
 
-			// COMPONENTE 309: El que necesitas para las 23,186 bajas
+			// COMPONENT 309: The one you need for the kills tracker
 			ItemPlugObjectives struct {
 				Data map[string]ItemPlugObjectivesComponent `json:"data"`
 			} `json:"plugObjectives"`
-			// Otros opcionales pero recomendados
+			// Other optional but recommended
 			Sockets struct {
 				Data map[string]ItemSocketsComponent `json:"data"`
 			} `json:"sockets"`
@@ -85,18 +87,18 @@ type ProfileResponse struct {
 	Message   string `json:"Message"`
 }
 
-// Struct auxiliar para el 309
+// Auxiliary struct for 309
 type ItemPlugObjectivesComponent struct {
-	// CAMBIO: Bungie lo llama "objectivesPerPlug" internamente por cada socket
+	// CHANGE: Bungie calls it "objectivesPerPlug" internally for each socket
 	ObjectivesPerPlug map[string][]ObjectiveData `json:"objectivesPerPlug"`
 }
 
-// Esta queda limpia, solo con los sockets
+// This one stays clean, only with the sockets
 type ItemSocketsComponent struct {
 	Sockets []SocketEntry `json:"sockets"`
 }
 
-// Estas se mantienen igual
+// These remain the same
 type ItemReusablePlugsComponent struct {
 	Plugs map[string][]PlugEntry `json:"plugs"`
 }
@@ -107,12 +109,12 @@ type PlugEntry struct {
 }
 
 type SocketEntry struct {
-	PlugHash  uint32 `json:"plugHash"` // El Hash del Perk o Modificador
+	PlugHash  uint32 `json:"plugHash"` // The Hash of the Perk or Modifier
 	IsEnabled bool   `json:"isEnabled"`
 	IsVisible bool   `json:"isVisible"`
 }
 
-// CharacterData representa un personaje del usuario (Componente 200)
+// CharacterData represents a user character (Component 200)
 type CharacterData struct {
 	CharacterId    string    `json:"characterId"`
 	ClassType      int       `json:"classType"`
@@ -127,37 +129,37 @@ type CharacterEquipmentData struct {
 
 // Item representa un elemento en el inventario (arma, armadura, consumible, etc)
 type Item struct {
-	ItemHash       uint32 `json:"itemHash"`       // Hash de definición del item (referencia al manifest)
-	ItemInstanceId string `json:"itemInstanceId"` // ID único de esta instancia específica
+	ItemHash       uint32 `json:"itemHash"`       // Definition hash for the item (reference to manifest)
+	ItemInstanceId string `json:"itemInstanceId"` // Unique ID for this specific instance
 }
 
-// ItemStatsComponent representa los stats de una instancia (Componente 304)
+// ItemStatsComponent represents the stats of an instance (Component 304)
 type ItemStatsComponent struct {
 	Stats map[uint32]StatData `json:"stats"`
 }
 
-// StatData contiene el valor individual
+// StatData contains the individual stat value
 type StatData struct {
 	StatHash uint32 `json:"statHash"`
 	Value    int    `json:"value"`
 }
 
-// Para el Poder (Componente 300)
+// For Power (Component 300)
 type ItemInstanceData struct {
 	PrimaryStat struct {
-		Value int `json:"value"` // Aquí vive el Poder (460)
+		Value int `json:"value"` // Power lives here (460)
 	} `json:"primaryStat"`
 }
 
-// Para Bajas y Nivel (Componente 301)
+// For Kills and Level (Component 301)
 type ItemObjectivesComponent struct {
 	Objectives []ObjectiveData `json:"objectives"`
 }
 
 type ObjectiveData struct {
-	ObjectiveHash   uint32 `json:"objectiveHash"`   // DEBE ser camelCase
-	Progress        int    `json:"progress"`        // DEBE ser minúscula
-	CompletionValue int    `json:"completionValue"` // DEBE ser camelCase
+	ObjectiveHash   uint32 `json:"objectiveHash"`   // MUST be camelCase
+	Progress        int    `json:"progress"`        // MUST be lowercase
+	CompletionValue int    `json:"completionValue"` // MUST be camelCase
 	Complete        bool   `json:"complete"`
 	Visible         bool   `json:"visible"`
 }
@@ -210,8 +212,8 @@ const (
 	CraftablesComponent        = "1300"
 )
 
-// GetCoreComponents devuelve los componentes esenciales para ver
-// personajes, sus armas equipadas, perks y stats.
+// GetCoreComponents returns the essential components to see
+// characters, their equipped weapons, perks and stats.
 func GetCoreComponents() []string {
 	return []string{
 		ProfilesComponent,                 // 100
@@ -241,7 +243,7 @@ var classNames = map[uint32]string{
 	2: "Warlock",
 }
 
-// GetClassName devuelve el nombre del guardián a partir de su tipo (Titan, Hunter, Warlock)
+// GetClassName returns the guardian name based on its type (Titan, Hunter, Warlock)
 func GetClassName(classType int) string {
 	return classNames[uint32(classType)]
 }
@@ -269,26 +271,26 @@ const (
 
 // Hash constants para tipos de stats comunes en armas
 const (
-	// Estadísticas principales de armas de fuego
-	StatHashRPM         = uint32(4232813984) // Velocidad de fuego
-	StatHashImpact      = uint32(4043523819) // Impacto
-	StatHashRange       = uint32(1240592695) // Alcance
-	StatHashStability   = uint32(155624089)  // Estabilidad
-	StatHashHandling    = uint32(943549884)  // Manejo
-	StatHashReloadSpeed = uint32(4284893193) // Velocidad de recarga
-	StatHashMagazine    = uint32(3871231066) // Capacidad de cargador
+	// Main firearm statistics
+	StatHashRPM         = uint32(4232813984) // Fire rate
+	StatHashImpact      = uint32(4043523819) // Impact
+	StatHashRange       = uint32(1240592695) // Range
+	StatHashStability   = uint32(155624089)  // Stability
+	StatHashHandling    = uint32(943549884)  // Handling
+	StatHashReloadSpeed = uint32(4284893193) // Reload speed
+	StatHashMagazine    = uint32(3871231066) // Magazine capacity
 
-	// Estadísticas técnicas
-	StatHashAimAssistance   = uint32(1345609583) // Asistencia de puntería
-	StatHashAirborne        = uint32(2714457168) // Precisión en aire
+	// Technical statistics
+	StatHashAimAssistance   = uint32(1345609583) // Aim assistance
+	StatHashAirborne        = uint32(2714457168) // Airborne accuracy
 	StatHashZoom            = uint32(3555269338) // Zoom
-	StatHashRecoilDirection = uint32(2715839340) // Dirección del retroceso
+	StatHashRecoilDirection = uint32(2715839340) // Recoil direction
 
-	// Estadísticas de espadas
-	StatHashSwingSpeed      = uint32(2837207746) // Velocidad de oscilación
-	StatHashAmmoCapacity    = uint32(925767036)  // Capacidad de munición
-	StatHashGuardResistance = uint32(419712076)  // Resistencia de guardia
-	StatHashChargeRate      = uint32(3022301683) // Velocidad de carga
+	// Sword statistics
+	StatHashSwingSpeed      = uint32(2837207746) // Swing speed
+	StatHashAmmoCapacity    = uint32(925767036)  // Ammo capacity
+	StatHashGuardResistance = uint32(419712076)  // Guard resistance
+	StatHashChargeRate      = uint32(3022301683) // Charge rate
 	StatHashGuardEndurance  = uint32(3736848092) // Resistencia de guardia
 )
 
@@ -341,25 +343,25 @@ func GetDamageName(hash uint32) string {
 	case 3373582059, 1, 0:
 		return "Kinetic"
 	default:
-		return "Kinetic" // Si es 0 o desconocido, la gran mayoría son cinéticas
+		return "Kinetic" // If it's 0 or unknown, the vast majority are kinetic
 	}
 }
 
-// Traduce el BucketHash (Slot) a texto legible
 func GetSlotName(hash uint32) string {
 	switch hash {
 	case 1498876634:
-		return "Kinetic" // Slot superior
+		return "Kinetic" // Slot 1
 	case 2465295065:
-		return "Energy" // Slot medio
-	case 95395402:
-		return "Power" // Slot inferior
+		return "Energy" // Slot 2
+	case 953998645:
+		return "Power" // Slot 3
 	default:
-		return "Other" // Para el caso del segundo objeto que vimos con slot 24222...
+		// Si ves muchos "Other", imprime el hash aquí para debuguear
+		return "Other"
 	}
 }
 
-// Determina el tipo de munición (para iconos o filtros)
+// Determines the ammo type (for icons or filters)
 func GetAmmoTypeName(ammoType int32) string {
 	switch ammoType {
 	case 1:

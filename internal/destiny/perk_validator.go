@@ -2,26 +2,36 @@ package destiny
 
 import "slices"
 
-// PerkValidator encapsula la lógica de validación de tipos de perk
+// PerkValidator encapsulates perk type validation logic
 type PerkValidator struct{}
 
-// NewPerkValidator crea un nuevo validador
+// NewPerkValidator creates a new validator
 func NewPerkValidator() *PerkValidator {
 	return &PerkValidator{}
 }
 
-// IsActualPerk determina si un tipo de perk debe ser mostrado
+// IsActualPerk determines if a perk type should be displayed
 func (pv *PerkValidator) IsActualPerk(typeName string) bool {
-	validTypes := []string{"Intrinsic", "Trait", "Barrel", "Magazine", "Blade", "Guard", "Arrow", "String", "Stock", "Grip"}
+	validTypes := []string{
+		"Intrinsic", "Enhanced Intrinsic", "Trait", "Enhanced Trait",
+		"Origin Trait", "Barrel", "Launcher Barrel", "Magazine",
+		"Battery", "Blade", "Guard", "Haft", "Arrow", "Bowstring",
+		"String", "Stock", "Grip", "Enhanced Launcher Barrel", "Enhanced Magazine",
+	}
 	return slices.Contains(validTypes, typeName)
 }
 
-// IsIntrinsic determina si es un perk intrínseco (marco del arma)
+// IsIntrinsic determines if it's an intrinsic perk (weapon frame)
 func (pv *PerkValidator) IsIntrinsic(typeName string) bool {
 	return typeName == "Intrinsic"
 }
 
-// GetValidPerkTypes devuelve los tipos de perk válidos
+// GetValidPerkTypes returns valid perk types
 func (pv *PerkValidator) GetValidPerkTypes() []string {
-	return []string{"Intrinsic", "Trait", "Barrel", "Magazine", "Blade", "Guard", "Arrow", "String", "Stock", "Grip"}
+	return []string{
+		"Intrinsic", "Enhanced Intrinsic", "Trait", "Enhanced Trait",
+		"Origin Trait", "Barrel", "Launcher Barrel", "Magazine",
+		"Battery", "Blade", "Guard", "Haft", "Arrow", "Bowstring",
+		"String", "Stock", "Grip", "Enhanced Launcher Barrel", "Enhanced Magazine",
+	}
 }

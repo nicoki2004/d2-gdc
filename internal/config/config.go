@@ -21,12 +21,12 @@ var (
 	once     sync.Once
 )
 
-// Get retorna la instancia única de la configuración
+// Get returns the unique instance of the configuration
 func Get() *Config {
 	once.Do(func() {
 		err := gotenv.Load()
 		if err != nil {
-			// No es fatal si no hay .env, puede venir de variables de sistema
+			// It's not fatal if there's no .env, it can come from system variables
 		}
 
 		instance = &Config{
@@ -36,7 +36,7 @@ func Get() *Config {
 			RedirectURL: os.Getenv("BUNGIE_OAUTH_REDIRECT_URI"),
 		}
 
-		// Validacion de campos obligatorios
+		// Validation of required fields
 		if err := instance.Validate(); err != nil {
 			logger.GetLogger().Fatal("Error en configuración: %v", err)
 		}
@@ -45,7 +45,7 @@ func Get() *Config {
 	return instance
 }
 
-// Validate verifica que todos los campos obligatorios estén presentes
+// Validate verifies that all required fields are present
 func (c *Config) Validate() error {
 	missing := []string{}
 

@@ -1,6 +1,6 @@
 package destiny
 
-// WeaponMetadata contiene información sobre un arma
+// WeaponMetadata contains information about a weapon
 type WeaponMetadata struct {
 	Level    int
 	Kills    int
@@ -8,25 +8,25 @@ type WeaponMetadata struct {
 	Power    int
 }
 
-// WeaponExtractor extrae información de armas desde el perfil
+// WeaponExtractor extracts weapon information from the profile
 type WeaponExtractor struct{}
 
-// NewWeaponExtractor crea un nuevo extractor
+// NewWeaponExtractor creates a new extractor
 func NewWeaponExtractor() *WeaponExtractor {
 	return &WeaponExtractor{}
 }
 
-// ExtractMetadata extrae toda la información de una arma
+// ExtractMetadata extracts all information about a weapon
 func (we *WeaponExtractor) ExtractMetadata(item Item, profile *ProfileResponse) WeaponMetadata {
 	metadata := WeaponMetadata{}
 
-	// Obtener level, kills y progress
+	// Get level, kills and progress
 	level, kills, progress := GetWeaponMetadata(item.ItemInstanceId, profile)
 	metadata.Level = level
 	metadata.Kills = kills
 	metadata.Progress = progress
 
-	// Obtener power desde itemComponents.instances
+	// Get power from itemComponents.instances
 	if inst, ok := profile.Response.ItemComponents.Instances.Data[item.ItemInstanceId]; ok {
 		metadata.Power = inst.PrimaryStat.Value
 	}
@@ -34,7 +34,7 @@ func (we *WeaponExtractor) ExtractMetadata(item Item, profile *ProfileResponse) 
 	return metadata
 }
 
-// ExtractStats extrae los stats estadísticos del arma
+// ExtractStats extracts weapon statistical stats
 func (we *WeaponExtractor) ExtractStats(item Item, profile *ProfileResponse) map[string]int {
 	stats := make(map[string]int)
 
@@ -49,7 +49,7 @@ func (we *WeaponExtractor) ExtractStats(item Item, profile *ProfileResponse) map
 	return stats
 }
 
-// ExtractSockets extrae información de sockets del arma
+// ExtractSockets extracts weapon socket information
 func (we *WeaponExtractor) ExtractSockets(item Item, profile *ProfileResponse) SocketsData {
 	data := SocketsData{}
 
@@ -64,7 +64,7 @@ func (we *WeaponExtractor) ExtractSockets(item Item, profile *ProfileResponse) S
 	return data
 }
 
-// SocketsData contiene información de sockets
+// SocketsData contains socket information
 type SocketsData struct {
 	HasSockets  bool
 	HasReusable bool

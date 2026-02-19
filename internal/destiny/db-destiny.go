@@ -17,7 +17,7 @@ func SyncInventory(
 	profile *ProfileResponse,
 	manifest map[string]ManifestItem,
 ) error {
-	fmt.Println("🚀 Iniciando sincronización con la base de datos...")
+	fmt.Println("🚀 Starting database synchronization...")
 
 	for charID, charData := range profile.Response.Characters.Data {
 		err := saveCharacter(ctx, repo, charID, charData)
@@ -26,34 +26,34 @@ func SyncInventory(
 		}
 	}
 
-	// 1. Recorrer Personajes: Equipado (205)
+	// 1. Iterate Characters: Equipped (205)
 	for charID, equipment := range profile.Response.CharacterEquipment.Data {
 		location := fmt.Sprintf("Equipped:%s", charID)
 		for _, item := range equipment.Items {
 			if err := SaveItem(ctx, repo, item, profile, manifest, location, charID); err != nil {
-				return fmt.Errorf("error guardando item equipado en %s: %w", location, err)
+				return fmt.Errorf("error saving equipped item at %s: %w", location, err)
 			}
 		}
 	}
 
-	// 2. Recorrer Personajes: Inventario/Mochila (201)
+	// 2. Iterate Characters: Inventory/Backpack (201)
 	for charID, inventory := range profile.Response.CharacterInventories.Data {
 		location := fmt.Sprintf("Inventory:%s", charID)
 		for _, item := range inventory.Items {
 			if err := SaveItem(ctx, repo, item, profile, manifest, location, charID); err != nil {
-				return fmt.Errorf("error guardando item inventario en %s: %w", location, err)
+				return fmt.Errorf("error saving inventory item at %s: %w", location, err)
 			}
 		}
 	}
 
-	// 3. Recorrer el Vault (102)
+	// 3. Iterate Vault (102)
 	for _, item := range profile.Response.ProfileInventory.Data.Items {
 		if err := SaveItem(ctx, repo, item, profile, manifest, "Vault", "Vault"); err != nil {
-			return fmt.Errorf("error guardando item vault: %w", err)
+			return fmt.Errorf("error saving vault item: %w", err)
 		}
 	}
 
-	fmt.Println("✅ Sincronización finalizada.")
+	fmt.Println("✅ Synchronization completed.")
 	return nil
 }
 
@@ -70,32 +70,32 @@ func SaveItem(
 	hashStr := fmt.Sprintf("%d", item.ItemHash)
 	def, ok := manifest[hashStr]
 	if !ok || def.ItemType != 3 {
-		return nil // No es un arma, no es error
+		return nil // Not a weapon, not an error
 	}
 
 	extractor := NewWeaponExtractor()
 	validator := NewPerkValidator()
 
-	// 1. Guardar datos básicos del arma
+	// 1. Save weapon base data
 	metadata := extractor.ExtractMetadata(item, profile)
 	if err := saveWeaponBase(ctx, repo, item, def, metadata, location, charID); err != nil {
-		return fmt.Errorf("error guardando datos base del arma: %w", err)
+		return fmt.Errorf("error saving weapon base data: %w", err)
 	}
 
-	// 2. Guardar stats
+	// 2. Save stats
 	if err := saveWeaponStats(ctx, repo, item, profile, extractor); err != nil {
-		return fmt.Errorf("error guardando stats del arma: %w", err)
+		return fmt.Errorf("error saving weapon stats: %w", err)
 	}
 
-	// 3. Guardar perks
+	// 3. Save perks
 	if err := saveWeaponPerks(ctx, repo, item, profile, manifest, extractor, validator); err != nil {
-		return fmt.Errorf("error guardando perks del arma: %w", err)
+		return fmt.Errorf("error saving weapon perks: %w", err)
 	}
 
 	return nil
 }
 
-// saveWeaponBase inserta o actualiza el arma base
+// saveWeaponBase inserts or updates the weapon base
 func saveWeaponBase(
 	ctx context.Context,
 	repo repository.WeaponRepository,
@@ -118,13 +118,13 @@ func saveWeaponBase(
 		CharacterID: sql.NullString{String: charID, Valid: true},
 		Tier:        sql.NullString{String: def.Inventory.TierTypeName, Valid: true},
 		IconUrl:     sql.NullString{String: BungieCDN + def.DisplayProperties.Icon, Valid: true},
-		Slot:        sql.NullString{String: GetSlotName(def.Inventory.BucketTypeHash)},
+		Slot:        sql.NullString{String: GetSlotName(def.Inventory.BucketTypeHash), Valid: true},
 		DamageType:  sql.NullString{String: GetDamageName(uint32(def.DefaultDamageTypeHash)), Valid: true},
 		AmmoType:    sql.NullInt64{Int64: int64(def.EquippingBlock.AmmoType), Valid: true},
 	})
 }
 
-// saveWeaponStats guarda o actualiza los stats del arma
+// saveWeaponStats saves or updates the weapon stats
 func saveWeaponStats(
 	ctx context.Context,
 	repo repository.WeaponRepository,
@@ -150,7 +150,7 @@ func saveWeaponStats(
 	return nil
 }
 
-// saveWeaponPerks guarda o actualiza los perks del arma
+// saveWeaponPerks saves or updates the weapon perks
 func saveWeaponPerks(
 	ctx context.Context,
 	repo repository.WeaponRepository,
@@ -177,13 +177,13 @@ func saveWeaponPerks(
 		socketIndexStr := fmt.Sprintf("%d", i)
 		options, ok := socketsData.Plugs.Plugs[socketIndexStr]
 
-		// Caso: Socket con múltiples opciones (árbol de perks)
+		// Case: Socket with multiple options (perks tree)
 		if socketsData.HasReusable && ok && len(options) > 0 {
 			if err := savePerkOptions(ctx, repo, item, options, socket, manifest, i, validator); err != nil {
 				return err
 			}
 		} else {
-			// Caso: Socket simple (sin opciones)
+			// Case: Simple socket (no options)
 			if err := saveSinglePerk(ctx, repo, item, socket, manifest, i, validator); err != nil {
 				return err
 			}
@@ -193,7 +193,7 @@ func saveWeaponPerks(
 	return nil
 }
 
-// savePerkOptions guarda múltiples opciones de perks en un socket
+// savePerkOptions saves multiple perk options in a socket
 func savePerkOptions(
 	ctx context.Context,
 	repo repository.WeaponRepository,
@@ -206,6 +206,15 @@ func savePerkOptions(
 ) error {
 	for _, opt := range options {
 		perkDef, exists := manifest[fmt.Sprintf("%d", opt.PlugItemHash)]
+		//
+		// // ESTA LÍNEA ES LA CLAVE:
+		//
+		// if item.ItemInstanceId == "6917530146978745979" {
+		// 	if item.ItemInstanceId == "TU_INSTANCE_ID_DE_MINT" || true {
+		// 		fmt.Printf("🔍 Slot %d | Perk: %s | Tipo: '%s'\n",
+		// 			socketIndex, perkDef.DisplayProperties.Name, perkDef.ItemTypeDisplayName)
+		// 	}
+		// }
 		if !exists || !validator.IsActualPerk(perkDef.ItemTypeDisplayName) {
 			continue
 		}
@@ -224,7 +233,7 @@ func savePerkOptions(
 	return nil
 }
 
-// saveSinglePerk guarda un único perk sin opciones
+// saveSinglePerk saves a single perk with no options
 func saveSinglePerk(
 	ctx context.Context,
 	repo repository.WeaponRepository,
@@ -235,6 +244,7 @@ func saveSinglePerk(
 	validator *PerkValidator,
 ) error {
 	perkDef, exists := manifest[fmt.Sprintf("%d", socket.PlugHash)]
+
 	if !exists || !validator.IsActualPerk(perkDef.ItemTypeDisplayName) {
 		return nil
 	}

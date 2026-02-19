@@ -31,17 +31,17 @@ func LoadManifestMap(filePath string) (map[string]ManifestItem, error) {
 	}
 	defer file.Close()
 
-	// Creamos el mapa donde guardaremos la "traducción"
-	// Usamos string como llave porque el JSON del manifest tiene los hashes como strings
+	// Create the map where we'll store the "translation"
+	// We use string as key because the manifest JSON has hashes as strings
 	manifestMap := make(map[string]ManifestItem)
 
 	decoder := json.NewDecoder(file)
 
-	// El manifest es un objeto gigante { "hash": {datos}, "hash2": {datos} }
-	// Decode() lo procesará de forma eficiente
+	// The manifest is a giant object { "hash": {data}, "hash2": {data} }
+	// Decode() will process it efficiently
 	err = decoder.Decode(&manifestMap)
 	if err != nil {
-		return nil, fmt.Errorf("error al decodificar manifest: %w", err)
+		return nil, fmt.Errorf("error decoding manifest: %w", err)
 	}
 
 	return manifestMap, nil

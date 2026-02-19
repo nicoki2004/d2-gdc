@@ -46,3 +46,46 @@ DELETE FROM weapon_stats;
 
 -- name: ClearAllWeaponsPerks :exec
 DELETE FROM weapon_perks;
+
+-- name: GetAllWeapons :many
+SELECT * FROM weapons;
+
+-- name: GetAllWeaponsWithPerks :many
+SELECT w.*, 
+       GROUP_CONCAT(p.perk_name, ',') as perks_list
+FROM weapons w
+LEFT JOIN weapon_perks p ON w.instance_id = p.instance_id
+GROUP BY w.instance_id;
+
+-- name: SearchWeaponsByPattern :many
+SELECT * FROM weapons 
+WHERE name LIKE ?
+ORDER BY power DESC;
+
+-- name: GetDuplicatesByHash :many
+SELECT * FROM weapons 
+WHERE hash = ?
+ORDER BY power DESC;
+
+-- name: GetWeaponsByLocation :many
+SELECT * FROM weapons 
+WHERE location = ?
+ORDER BY name ASC;
+-- name: GetAllCharacters :many
+SELECT * FROM characters
+ORDER BY last_played DESC;
+
+-- name: GetWeaponsByType :many
+SELECT * FROM weapons 
+WHERE type = ?
+ORDER BY power DESC, name ASC;
+
+-- name: GetWeaponsByName :many
+SELECT * FROM weapons 
+WHERE name LIKE ?
+ORDER BY power DESC;
+
+-- name: GetWeaponComparison :many
+SELECT * FROM weapons 
+WHERE instance_id IN (sqlc.slice('instance_ids'))
+ORDER BY power DESC;

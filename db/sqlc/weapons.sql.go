@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const clearAllWeaponStats = `-- name: ClearAllWeaponStats :exec
@@ -55,6 +56,195 @@ func (q *Queries) ClearWeaponStats(ctx context.Context, instanceID string) error
 	return err
 }
 
+const getAllCharacters = `-- name: GetAllCharacters :many
+SELECT character_id, class_type, light_level, emblem_url, last_played FROM characters
+ORDER BY last_played DESC
+`
+
+func (q *Queries) GetAllCharacters(ctx context.Context) ([]Character, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCharacters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Character
+	for rows.Next() {
+		var i Character
+		if err := rows.Scan(
+			&i.CharacterID,
+			&i.ClassType,
+			&i.LightLevel,
+			&i.EmblemUrl,
+			&i.LastPlayed,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllWeapons = `-- name: GetAllWeapons :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons
+`
+
+func (q *Queries) GetAllWeapons(ctx context.Context) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, getAllWeapons)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllWeaponsWithPerks = `-- name: GetAllWeaponsWithPerks :many
+SELECT w.instance_id, w.hash, w.name, w.type, w.power, w.kills, w.level, w.location, w.updated_at, w.tier, w.icon_url, w.slot, w.damage_type, w.ammo_type, w.character_id, 
+       GROUP_CONCAT(p.perk_name, ',') as perks_list
+FROM weapons w
+LEFT JOIN weapon_perks p ON w.instance_id = p.instance_id
+GROUP BY w.instance_id
+`
+
+type GetAllWeaponsWithPerksRow struct {
+	InstanceID  string
+	Hash        int64
+	Name        string
+	Type        string
+	Power       int64
+	Kills       int64
+	Level       int64
+	Location    string
+	UpdatedAt   sql.NullTime
+	Tier        sql.NullString
+	IconUrl     sql.NullString
+	Slot        sql.NullString
+	DamageType  sql.NullString
+	AmmoType    sql.NullInt64
+	CharacterID sql.NullString
+	PerksList   string
+}
+
+func (q *Queries) GetAllWeaponsWithPerks(ctx context.Context) ([]GetAllWeaponsWithPerksRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllWeaponsWithPerks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllWeaponsWithPerksRow
+	for rows.Next() {
+		var i GetAllWeaponsWithPerksRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+			&i.PerksList,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDuplicatesByHash = `-- name: GetDuplicatesByHash :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE hash = ?
+ORDER BY power DESC
+`
+
+func (q *Queries) GetDuplicatesByHash(ctx context.Context, hash int64) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, getDuplicatesByHash, hash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getGodRollCandidates = `-- name: GetGodRollCandidates :many
 SELECT 
   w.instance_id, w.hash, w.name, w.type, w.power, w.kills, w.level, w.location, w.updated_at, w.tier, w.icon_url, w.slot, w.damage_type, w.ammo_type, w.character_id FROM weapons w
@@ -70,6 +260,196 @@ type GetGodRollCandidatesParams struct {
 
 func (q *Queries) GetGodRollCandidates(ctx context.Context, arg GetGodRollCandidatesParams) ([]Weapon, error) {
 	rows, err := q.db.QueryContext(ctx, getGodRollCandidates, arg.PerkName, arg.Value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWeaponComparison = `-- name: GetWeaponComparison :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE instance_id IN (/*SLICE:instance_ids*/?)
+ORDER BY power DESC
+`
+
+func (q *Queries) GetWeaponComparison(ctx context.Context, instanceIds []string) ([]Weapon, error) {
+	query := getWeaponComparison
+	var queryParams []interface{}
+	if len(instanceIds) > 0 {
+		for _, v := range instanceIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:instance_ids*/?", strings.Repeat(",?", len(instanceIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:instance_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWeaponsByLocation = `-- name: GetWeaponsByLocation :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE location = ?
+ORDER BY name ASC
+`
+
+func (q *Queries) GetWeaponsByLocation(ctx context.Context, location string) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, getWeaponsByLocation, location)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWeaponsByName = `-- name: GetWeaponsByName :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE name LIKE ?
+ORDER BY power DESC
+`
+
+func (q *Queries) GetWeaponsByName(ctx context.Context, name string) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, getWeaponsByName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWeaponsByType = `-- name: GetWeaponsByType :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE type = ?
+ORDER BY power DESC, name ASC
+`
+
+func (q *Queries) GetWeaponsByType(ctx context.Context, type_ string) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, getWeaponsByType, type_)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +525,51 @@ type InsertWeaponStatParams struct {
 func (q *Queries) InsertWeaponStat(ctx context.Context, arg InsertWeaponStatParams) error {
 	_, err := q.db.ExecContext(ctx, insertWeaponStat, arg.InstanceID, arg.StatName, arg.Value)
 	return err
+}
+
+const searchWeaponsByPattern = `-- name: SearchWeaponsByPattern :many
+SELECT instance_id, hash, name, type, power, kills, level, location, updated_at, tier, icon_url, slot, damage_type, ammo_type, character_id FROM weapons 
+WHERE name LIKE ?
+ORDER BY power DESC
+`
+
+func (q *Queries) SearchWeaponsByPattern(ctx context.Context, name string) ([]Weapon, error) {
+	rows, err := q.db.QueryContext(ctx, searchWeaponsByPattern, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Weapon
+	for rows.Next() {
+		var i Weapon
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.Hash,
+			&i.Name,
+			&i.Type,
+			&i.Power,
+			&i.Kills,
+			&i.Level,
+			&i.Location,
+			&i.UpdatedAt,
+			&i.Tier,
+			&i.IconUrl,
+			&i.Slot,
+			&i.DamageType,
+			&i.AmmoType,
+			&i.CharacterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const upsertCharacter = `-- name: UpsertCharacter :exec

@@ -15,7 +15,7 @@ type Logger interface {
 	Debug(msg string, args ...interface{})
 }
 
-// StdLogger implementa Logger usando log estándar
+// StdLogger implements Logger using standard log
 type StdLogger struct {
 	infoLog   *log.Logger
 	warnLog   *log.Logger
@@ -25,7 +25,7 @@ type StdLogger struct {
 	debugMode bool
 }
 
-// NewStdLogger crea un nuevo logger estándar
+// NewStdLogger creates a new standard logger
 func NewStdLogger(debugMode bool) *StdLogger {
 	return &StdLogger{
 		infoLog:   log.New(os.Stdout, "✓ ", log.Lshortfile),

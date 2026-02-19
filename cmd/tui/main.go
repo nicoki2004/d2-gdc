@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"flag"
 	"os"
-	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	_ "github.com/mattn/go-sqlite3"
 
 	db "github.com/nicoki2004/g2-drc/db/sqlc"
@@ -15,6 +15,7 @@ import (
 	"github.com/nicoki2004/g2-drc/internal/destiny"
 	"github.com/nicoki2004/g2-drc/internal/logger"
 	"github.com/nicoki2004/g2-drc/internal/repository"
+	"github.com/nicoki2004/g2-drc/internal/tui"
 )
 
 // getDatabasePath returns the path to the SQLite database from environment variable DATABASE_FILE,
@@ -44,7 +45,6 @@ func main() {
 	repo := repository.NewSQLCWeaponRepository(queries, dbConn)
 
 	log.Info("Database connected and ready.")
-	cfg := initConfig()
 
 	if *refresh {
 		log.Info("🧹 Cleaning up previous arsenal...")
@@ -53,36 +53,14 @@ func main() {
 		}
 	}
 
-	apiClient := fetchUserData(cfg)
-
-	displayProfile(apiClient, repo)
+	launchTUI(repo)
 }
 
-// Shows the character and the items.
-func displayProfile(apiClient *destiny.Client, repo repository.WeaponRepository) {
-	log := logger.GetLogger()
-
-	components := destiny.GetCoreComponents()
-	dataProfile, err := destiny.GetProfile(apiClient, components...)
-	if err != nil {
-		log.Fatal("Error getting profile: %v", err)
-	}
-	manifest, err := destiny.LoadManifestMap("items_manifest.json")
-	if err != nil {
-		log.Error("Error loading manifest: %v", err)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	if err := destiny.SyncInventory(ctx, repo, dataProfile, manifest); err != nil {
-		log.Fatal("Error syncing inventory: %v", err)
-	}
-
-	// destiny.PrintCharacters(dataProfile)
-	// destiny.PrintCharactersItems(dataProfile, manifest)
-	// destiny.PrintAllWeapons(dataProfile, manifest)
+func launchTUI(repo repository.WeaponRepository) error {
+	model := tui.NewModel(repo)
+	p := tea.NewProgram(model, tea.WithAltScreen())
+	_, err := p.Run()
+	return err
 }
 
 // Inicializa el ApiCLient con el Token y el MembershipId

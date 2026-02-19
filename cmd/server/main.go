@@ -16,12 +16,12 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		if code == "" {
-			fmt.Fprintf(w, "Esperando código de Bungie...")
+			fmt.Fprintf(w, "Waiting for Bungie code...")
 			return
 		}
 
-		log.Info("¡Código recibido!: %s", code)
-		fmt.Fprintf(w, "¡Autorización exitosa! Puedes cerrar esta pestaña y volver a la terminal.")
+		log.Info("Code received!: %s", code)
+		fmt.Fprintf(w, "Authorization successful! You can close this tab and return to the terminal.")
 
 		cfg := config.Get()
 		token, err := auth.ExchangeCode(cfg, code)
@@ -33,18 +33,18 @@ func main() {
 			log.Error("save keychain error: %v", err)
 			return
 		}
-		log.Info("✅ Token guardado de forma segura.")
+		log.Info("✅ Token saved securely.")
 
 		done <- true
 	})
 
 	go func() {
-		log.Info("Servidor escuchando en https://localhost:4200...")
+		log.Info("Server listening on https://localhost:4200...")
 		if err := http.ListenAndServeTLS(":4200", "localhost.pem", "localhost-key.pem", nil); err != nil {
-			log.Fatal("No se pudo iniciar el servidor: %v", err)
+			log.Fatal("Failed to start server: %v", err)
 		}
 	}()
 
 	<-done
-	fmt.Println("Cerrando servidor de autenticación. ¡Listo para usar la API!")
+	fmt.Println("Closing authentication server. Ready to use the API!")
 }

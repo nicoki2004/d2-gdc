@@ -56,15 +56,15 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	// Si el token expiró (401)
+	// If token expired (401)
 	if resp.StatusCode == http.StatusUnauthorized {
 		resp.Body.Close()
 
-		logger.GetLogger().Warn("Token expirado, intentando refresh")
+		logger.GetLogger().Warn("Token expired, attempting refresh")
 
 		newToken, err := auth.RefreshToken(c.cfg, c.token)
 		if err != nil {
-			return nil, fmt.Errorf("sesión expirada: %w", err)
+			return nil, fmt.Errorf("session expired: %w", err)
 		}
 
 		c.token = newToken
@@ -74,7 +74,7 @@ func (c *Client) DoRequest(method, url string) (*http.Response, error) {
 			return nil, err
 		}
 
-		logger.GetLogger().Info("Token refrescado, reintentando petición original")
+		logger.GetLogger().Info("Token refreshed, retrying original request")
 		return c.httpClient.Do(req)
 	}
 
